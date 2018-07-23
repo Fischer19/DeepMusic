@@ -236,6 +236,13 @@ def target_transform(train_y):
     output[0, int(train_y)] = 1
     return output.unsqueeze(1).to(device)
 
+def showPlot(points):
+    plt.figure()
+    fig, ax = plt.subplots()
+    # this locator puts ticks at regular intervals
+    loc = ticker.MultipleLocator(base=0.2)
+    ax.yaxis.set_major_locator(loc)
+    plt.plot(points)
 
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
@@ -254,7 +261,11 @@ STOP_TAG = 6
 input_dim=3
 output_size=7
 hidden_dim=512
-
+print_every=100
+plot_every=100
+plot_losses=[]
+print_loss_total=0
+plot_loss_total=0
 
 # Make up some training data
 '''
@@ -268,7 +279,7 @@ optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
 
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(30):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(3):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
@@ -282,10 +293,24 @@ for epoch in range(30):  # again, normally you would NOT do 300 epochs, it is to
 
         # Step 3. Run our forward pass.
         loss = model.neg_log_likelihood(X_train, y_train)
-        print(loss)
+        print_loss_total+=loss
+        plot_loss_total+=loss
+        
+        if i % print_every == 0:
+            print_loss_avg = print_loss_total / print_every
+            print_loss_total = 0
+            print('(%d %.4f)' % (i, print_loss_avg))
+
+        if i % plot_every == 0:
+            plot_loss_avg = plot_loss_total / plot_every
+            plot_losses.append(plot_loss_avg)
+            plot_loss_total = 0
+
         # Step 4. Compute the loss, gradients, and update the parameters by
         # calling optimizer.step()
         loss.backward()
         optimizer.step()
+
+showPlot(plot_losses)
 
 # We got it!
