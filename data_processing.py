@@ -63,18 +63,16 @@ def pitch2numpy(file_dir):
     content = target_file.readlines()
     train_y = []
     train_x = []
-    time_x = []
     for num, lines in enumerate(content):
         target = []
         for t in lines.split(" "):
             if t != '' and t != '\n':
                 target.append(t)
-        train_x.append(float(target[2]))
-        train_y.append(int(target[4]))
+        train_x.append([float(target[0]), float(target[1]), float(target[2])])
+        train_y.append([int(target[4])])
         #print(target[1], target[0])
-        time_x.append(f(target[1]) - float(target[0]))
     target_file.close()
-    return train_x, train_y, time_x
+    return train_x, train_y
 
 
 def prepare_data():
@@ -137,28 +135,26 @@ def find_max_length(train_X):
 
 
 def pitch_data():
-    pitch_dir = "/Users/Fischer/NYU/MusicStructuralAnalysis_Project/data"
+    pitch_dir = "/Users/joker/data"
     target_dir = os.listdir(pitch_dir)
     train_X = []
     train_Y = []
-    time_X = []
     for i in range(len(target_dir)):
         if target_dir[i].split(".")[-1] != "txt":
             continue
         file_dir = pitch_dir + "/" + target_dir[i]
-        train_x, train_y, time_x = pitch2numpy(file_dir)
+        train_x, train_y= pitch2numpy(file_dir)
         train_X.append(np.array(train_x))
         train_Y.append(np.array(train_y))
-        time_X.append(np.array(time_x))
-    train_X, train_Y, time_X = np.array(train_X), np.array(train_Y), np.array(time_X)
-    print(train_X.shape, train_Y.shape, time_X.shape)
-    dic = {"X": train_X, "Y": train_Y, "time": time_X}
+    train_X, train_Y= np.array(train_X), np.array(train_Y)
+    print(train_X.shape, train_Y.shape)
+    dic = {"X": train_X, "Y": train_Y}
     f = open("pitch_data.pkl", "wb")
     pl.dump(dic, f)
     f.close()
-    return train_X, train_Y, time_X
+    return train_X, train_Y
 
 
-train_X, train_Y, time_X = pitch_data()
+train_X, train_Y= pitch_data()
 max_length = find_max_length(train_X)
 print(max_length)
