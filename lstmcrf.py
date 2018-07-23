@@ -27,23 +27,17 @@ class BiLSTM_CRF(nn.Module):
 
         self.lstm1 = nn.LSTM(input_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
-        self.fc1 = nn.Linear(self.hidden_dim, self.input_dim)
-        self.lstm2 = nn.LSTM(input_dim, hidden_dim // 2,
+        self.lstm2 = nn.LSTM(hidden_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
-        self.fc2 = nn.Linear(self.hidden_dim, self.input_dim)
-        self.lstm3 = nn.LSTM(input_dim, hidden_dim // 2,
+        self.lstm3 = nn.LSTM(hidden_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
-        self.fc3 = nn.Linear(self.hidden_dim, self.input_dim)
-        self.lstm4 = nn.LSTM(input_dim, hidden_dim // 2,
+        self.lstm4 = nn.LSTM(hidden_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
-        self.fc4 = nn.Linear(self.hidden_dim, self.input_dim)
-        self.lstm5 = nn.LSTM(input_dim, hidden_dim // 2,
+        self.lstm5 = nn.LSTM(hidden_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
-        self.fc5 = nn.Linear(self.hidden_dim, self.input_dim)
-        self.lstm6 = nn.LSTM(input_dim, hidden_dim // 2,
+        self.lstm6 = nn.LSTM(hidden_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
-        self.fc6 = nn.Linear(self.hidden_dim, self.input_dim)
-        self.lstm7 = nn.LSTM(input_dim, hidden_dim // 2,
+        self.lstm7 = nn.LSTM(hidden_dim, hidden_dim // 2,
                             num_layers=1, bidirectional=True)
         # Maps the output of the LSTM into the output space
         self.fc7 = nn.Linear(self.hidden_dim, self.output_size)
@@ -111,24 +105,20 @@ class BiLSTM_CRF(nn.Module):
         self.hidden7 = self.init_hidden()
         
         lstm_out1, self.hidden1 = self.lstm1(sequence, self.hidden1)
-        lstm_in2=self.fc1(lstm_out1)
         #todo: test Batchnorm 1d layer
 
-        lstm_out2, self.hidden2 = self.lstm2(lstm_in2, self.hidden2)
-        lstm_in3=self.fc2(lstm_out2)
+        lstm_out2, self.hidden2 = self.lstm2(lstm_out1, self.hidden2)
         
-        lstm_out3, self.hidden3 = self.lstm3(lstm_in3+lstm_in2, self.hidden3)
-        lstm_in4=self.fc3(lstm_out3) #skip_connection
+        lstm_out3, self.hidden3 = self.lstm3(lstm_out2+lstm_out1, self.hidden3)
 
-        lstm_out4, self.hidden4 = self.lstm4(lstm_in4+lstm_in3, self.hidden4)
-        lstm_in5=self.fc4(lstm_out4) #skip_connection
-        lstm_out5, self.hidden5 = self.lstm5(lstm_in5+lstm_in4, self.hidden5)
-        lstm_in6=self.fc5(lstm_out5) #skip_connection
-        lstm_out6, self.hidden6 = self.lstm6(lstm_in6+lstm_in5, self.hidden6)
-        lstm_in7=self.fc6(lstm_out6) #skip_connection
+        lstm_out4, self.hidden4 = self.lstm4(lstm_out3+lstm_out2, self.hidden4)
         
-        lstm_out7, self.hidden7 = self.lstm7(lstm_in7+lstm_in6, self.hidden7)
-        lstm_feats=self.fc7(lstm_out7) #skip_connection
+        lstm_out5, self.hidden5 = self.lstm5(lstm_out4+lstm_out3, self.hidden5)
+        
+        lstm_out6, self.hidden6 = self.lstm6(lstm_out5+lstm_out4, self.hidden6)
+        
+        lstm_out7, self.hidden7 = self.lstm7(lstm_out6+lstm_out5, self.hidden7)
+        lstm_feats=self.fc7(lstm_out7)
         
         return lstm_feats
 
@@ -201,7 +191,7 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-device=1
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
 with open("pitch_data.pkl", "rb") as f:
     dic = pickle.load(f)
