@@ -68,12 +68,12 @@ class BiLSTM_CRF(nn.Module):
         self.hidden7 = self.init_hidden()
 
     def init_hidden(self):
-        return (torch.randn(2, 1, self.hidden_dim // 2),
-                torch.randn(2, 1, self.hidden_dim // 2))
+        return (torch.randn(2, 1, self.hidden_dim // 2, device=device),
+                torch.randn(2, 1, self.hidden_dim // 2, device=device))
 
     def _forward_alg(self, feats):
         # Do the forward algorithm to compute the partition function
-        init_alphas = torch.full((1, self.output_size), -10000.)
+        init_alphas = torch.full((1, self.output_size), -10000., device=device)
         # START_TAG has all of the score.
         init_alphas[0][START_TAG] = 0.
 
@@ -134,8 +134,8 @@ class BiLSTM_CRF(nn.Module):
 
     def _score_sentence(self, feats, tags):
         # Gives the score of a provided tag sequence
-        score = torch.zeros(1)
-        tags = torch.cat([torch.tensor([START_TAG], dtype=torch.long), tags])
+        score = torch.zeros(1, device=device)
+        tags = torch.cat([torch.tensor([START_TAG], dtype=torch.long, device=device), tags])
         for i, feat in enumerate(feats):
             score = score + \
                 self.transitions[tags[i + 1], tags[i]] + feat[0, tags[i + 1]]
@@ -146,7 +146,7 @@ class BiLSTM_CRF(nn.Module):
         backpointers = []
 
         # Initialize the viterbi variables in log space
-        init_vvars = torch.full((1, self.output_size), -10000.)
+        init_vvars = torch.full((1, self.output_size), -10000., device=device)
         init_vvars[0][START_TAG] = 0
 
         # forward_var at step i holds the viterbi variables for step i-1
@@ -201,7 +201,7 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-
+device=1
 # load data from file
 with open("pitch_data.pkl", "rb") as f:
     dic = pickle.load(f)
@@ -274,18 +274,18 @@ data1=torch.tensor(seq1, dtype=torch.float)
 truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
-model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG)
+model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
 optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
 
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(3):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
         # We need to clear them out before each instance
-        X_train=X_train.reshape(9,1,3).float()
-        y_train=y_train.reshape(9,).long()
+        X_train=X_train.reshape(9,1,3).float().to(device)
+        y_train=y_train.reshape(9,).long().to(device)
         model.zero_grad()
 
         # Step 2. Get our inputs ready for the network, that is,
@@ -310,7 +310,7 @@ for epoch in range(3):  # again, normally you would NOT do 300 epochs, it is toy
         # calling optimizer.step()
         loss.backward()
         optimizer.step()
-
+model.save_state_dict('lstmcrf_train.pt')
 showPlot(plot_losses)
 
 # We got it!
