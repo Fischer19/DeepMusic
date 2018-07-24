@@ -325,7 +325,7 @@ for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy
         # calling optimizer.step()
         loss.backward()
         optimizer.step()
-model.save_state_dict('lstmcrf_train.pt')
+model.save_state_dict('lstmcrf_bn_train.pt')
 showPlot(plot_losses)
 
 # We got it!

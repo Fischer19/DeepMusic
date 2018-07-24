@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import torch.utils.data as data_utils
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 def argmax(vec):
     # return the argmax as a python int
@@ -205,9 +207,9 @@ def input_transform(train_x, time_x, i):
 def input_factorize(train_x):
     output = []
     for i in range(train_x.shape[0]):
-        content=np.array_split(train_x[i], train_x[i].shape[0]/9)
+        content=np.array_split(train_x[i], train_x[i].shape[0]/20)
         for index in range(len(content)):
-            if (len(content[index]))<10:
+            if (len(content[index]))<21:
                 output.append(content[index])
     return output
 
@@ -215,9 +217,9 @@ def input_factorize(train_x):
 def target_factorize(train_y):
     output = []
     for i in range(train_y.shape[0]):
-        content=np.array_split(train_y[i], train_y[i].shape[0]/9)
+        content=np.array_split(train_y[i], train_y[i].shape[0]/20)
         for index in range(len(content)):
-            if (len(content[index]))<10:
+            if (len(content[index]))<21:
                 output.append(content[index])
     return output
 
@@ -265,17 +267,17 @@ truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
-optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
+optimizer = optim.SGD(model.parameters(), lr=0.001, weight_decay=1e-8)
 
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(30):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
         # We need to clear them out before each instance
-        X_train=X_train.reshape(9,1,3).float().to(device)
-        y_train=y_train.reshape(9,).long().to(device)
+        X_train=X_train.reshape(20,1,3).float().to(device)
+        y_train=y_train.reshape(20,).long().to(device)
         model.zero_grad()
 
         # Step 2. Get our inputs ready for the network, that is,
@@ -300,7 +302,7 @@ for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy
         # calling optimizer.step()
         loss.backward()
         optimizer.step()
-model.save_state_dict('lstmcrf_train.pt')
+torch.save(model.state_dict(), 'state_dict.pt')
 showPlot(plot_losses)
 
 # We got it!
