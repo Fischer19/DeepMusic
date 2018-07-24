@@ -273,6 +273,7 @@ print(train_X[0])
 
 START_TAG = 5
 STOP_TAG = 6
+CLIP = 5
 input_dim=3
 output_size=7
 hidden_dim=512
@@ -324,6 +325,7 @@ for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy
         # Step 4. Compute the loss, gradients, and update the parameters by
         # calling optimizer.step()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP)
         optimizer.step()
 model.save_state_dict('lstmcrf_bn_train.pt')
 showPlot(plot_losses)
