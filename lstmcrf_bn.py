@@ -291,11 +291,11 @@ truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
-optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-4)
+optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-7)
 scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(10):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):
@@ -328,11 +328,6 @@ for epoch in range(1):  # again, normally you would NOT do 300 epochs, it is toy
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP)
         optimizer.step()
-<<<<<<< HEAD
-model.save_state_dict('lstmcrf_bn_train.pt')
-=======
-torch.save(model.state_dict(),'lstmcrf_train.pt')
->>>>>>> 3ddf83d0f027d550fd8193ce8f7389c8d13e0cad
-showPlot(plot_losses)
+    torch.save(model.state_dict(),'lstmcrf_train.pt')
 
 # We got it!
