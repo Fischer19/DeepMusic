@@ -68,8 +68,8 @@ def pitch2numpy(file_dir):
         for t in lines.split(" "):
             if t != '' and t != '\n':
                 target.append(t)
-        train_x.append([float(target[0]), float(target[1]), float(target[2])])
-        train_y.append([int(target[4])])
+        train_x.append([float(target[i]) for i in range(len(target)-1)])
+        train_y.append([int(target[len(target)-1])])
         #print(target[1], target[0])
     target_file.close()
     return train_x, train_y
@@ -135,7 +135,7 @@ def find_max_length(train_X):
 
 
 def pitch_data():
-    pitch_dir = "/Users/joker/data"
+    pitch_dir = "/Users/joker/Desktop/output"
     target_dir = os.listdir(pitch_dir)
     train_X = []
     train_Y = []
@@ -149,7 +149,7 @@ def pitch_data():
     train_X, train_Y= np.array(train_X), np.array(train_Y)
     print(train_X.shape, train_Y.shape)
     dic = {"X": train_X, "Y": train_Y}
-    f = open("pitch_data.pkl", "wb")
+    f = open("/Users/joker/pitch_data.pkl", "wb")
     pl.dump(dic, f)
     f.close()
     return train_X, train_Y

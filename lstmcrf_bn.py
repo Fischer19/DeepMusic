@@ -217,8 +217,8 @@ class BiLSTM_CRF(nn.Module):
 import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
-SEQ_LEN=20
-with open("pitch_data.pkl", "rb") as f:
+SEQ_LEN=200
+with open("/Users/joker/pitch_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
@@ -274,7 +274,7 @@ print(train_X[0])
 START_TAG = 5
 STOP_TAG = 6
 CLIP = 5
-input_dim=3
+input_dim=86
 output_size=7
 hidden_dim=512
 print_every=100
@@ -301,7 +301,7 @@ for epoch in range(10):  # again, normally you would NOT do 300 epochs, it is to
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
         # We need to clear them out before each instance
-        X_train=X_train.reshape(SEQ_LEN,1,3).float().to(device)
+        X_train=X_train.reshape(SEQ_LEN,1,input_dim).float().to(device)
         y_train=y_train.reshape(SEQ_LEN,).long().to(device)
         model.zero_grad()
 
