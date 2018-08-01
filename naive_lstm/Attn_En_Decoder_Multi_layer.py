@@ -86,49 +86,21 @@ Decoder RNN output of size (1 * target_num)   should be (num_sentences * target_
 import pickle
 
 # load data from file
-with open("/home/yiqin/2018summer_project/DeepMusic/pitch_data.pkl", "rb") as f:
+"""with open("/home/yiqin/2018summer_project/DeepMusic/pitch_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
-    train_Y = dic["Y"]
+    #train_Y = dic["Y"]
     #time_X = dic["time"]
+    """
     
-for i in range(train_Y.shape[0]):
-    train_Y[i] = torch.from_numpy((train_Y[i] == 4).astype(int)).float()
-    
-
-# helper functions:
-    
-def input_transform(train_x, i):
-    output = torch.from_numpy(np.array([train_x[i][:,1] - train_x[i][:,0], train_x[i][:,2]]))
-    return output.squeeze(0).transpose(1,0).to(device)
+with open("/home/yiqin/2018summer_project/balanced_data_small.pkl", "rb") as f:
+    dic = pickle.load(f)
+    train_X = dic["X2"]
+    train_Y = dic["Y"]
     
     
-def input_factorize(train_x):
-    output = []
-    for i in range(train_x.shape[0]):
-        for item in np.array_split(train_x[i], train_x[i].shape[0] / 7):
-            output.append(item)
-    return output
-
-
-def target_factorize(train_y):
-    output = []
-    for i in range(train_y.shape[0]):
-        for item in np.array_split(train_y[i].numpy(), train_y[i].shape[0] / 7):
-            output.append(torch.Tensor(item))
-    return output
-
-def target_transform(train_y):
-    output = torch.zeros((1, 2))
-    output[0, int(train_y)] = 1
-    return output.unsqueeze(1).to(device)
-
-
-train_X = input_factorize(train_X)
-target_Tensor = target_factorize(train_Y)
-
-
-# In[66]:
+target_Tensor = train_Y
+maximum_target = len(train_Y)
 
 def focal_loss(gamma, rescale, criterion, output, target):
     if int(target) == 1:
@@ -139,8 +111,6 @@ def focal_loss(gamma, rescale, criterion, output, target):
         loss = p_negative * criterion(output, target.unsqueeze(0).long())
     return loss
 
-
-# In[62]:
 
 import random
 teacher_forcing_ratio = 1
@@ -176,39 +146,30 @@ def train(input_tensor, target_tensor, decoder, decoder_optimizer, criterion, ve
     
     decoder_input = input_tensor[0]
     
-    if use_teacher_forcing:
-        for di in range(0, target_length):
-            decoder_output, (hidden_1, cell_1), (hidden_2, cell_2), (hidden_3, cell_3), (hidden_4, cell_4), (hidden_5, cell_5), (hidden_6, cell_6), (hidden_7, cell_7) = decoder(decoder_input, 
-                            (hidden_1, cell_1), (hidden_2, cell_2), (hidden_3, cell_3), (hidden_4, cell_4), (hidden_5, cell_5), (hidden_6, cell_6), (hidden_7, cell_7))
-            if verbose:
-                temp.append(int(torch.argmax(decoder_output, dim = 1).cpu().numpy()))
-                temp_score.append(decoder_output)
-            loss += focal_loss(2, 5, criterion,decoder_output, target_tensor[di].squeeze())
-            if di + 1 < target_length:
-                decoder_input = input_tensor[di + 1]
-                
-    else:
-        for di in range(1, input_length):
-            decoder_output, (hidden_1, cell_1), (hidden_2, cell_2), (hidden_3, cell_3),  (hidden_4, cell_4), (hidden_5, cell_5) = decoder(decoder_input, 
-                            (hidden_1, cell_1), (hidden_2, cell_2), (hidden_3, cell_3),  (hidden_4, cell_4), (hidden_5, cell_5))
-            if verbose:
-                temp.append(int(torch.argmax(decoder_output, dim = 1).cpu().numpy()))
-            loss += criterion(decoder_output, target_tensor[di].unsqueeze(0))
-            
-            #print(loss)
-            decoder_input = decoder_output
+    for di in range(0, target_length):
+        decoder_output, (hidden_1, cell_1), (hidden_2, cell_2), (hidden_3, cell_3), (hidden_4, cell_4), (hidden_5, cell_5), (hidden_6, cell_6), (hidden_7, cell_7) = decoder(decoder_input, 
+                        (hidden_1, cell_1), (hidden_2, cell_2), (hidden_3, cell_3), (hidden_4, cell_4), (hidden_5, cell_5), (hidden_6, cell_6), (hidden_7, cell_7))
+        if verbose:
+            temp.append(int(torch.argmax(decoder_output, dim = 1).cpu().numpy()))
+            temp_score.append(decoder_output)
+
+        loss += criterion(decoder_output, target_tensor[di].unsqueeze(0).long())
+
+        if di + 1 < target_length:
+            decoder_input = input_tensor[di + 1]
 
     loss.backward()
+
     if verbose:
         print("Prediction :", temp) 
+        print("Target:", target_tensor.squeeze())
         print("Score :", temp_score)
-        print("Target:", target_tensor.squeeze()) 
+        
     
 
     decoder_optimizer.step()
 
     return loss.item() / target_length
-
 
 # In[63]:
 
@@ -232,7 +193,7 @@ def timeSince(since, percent):
 
 # In[64]:
 
-def trainIters(decoder, n_iters, print_every = 1000, plot_every = 100, learning_rate = 0.01, CEL_weight=[1,5], total_batch = 66964):    
+def trainIters(decoder, n_iters, print_every = 1000, plot_every = 100, learning_rate = 0.01, CEL_weight=[1,5], total_batch = maximum_target, gamma = 0.1):    
     start = time.time()
     
     plot_losses = []
@@ -243,13 +204,18 @@ def trainIters(decoder, n_iters, print_every = 1000, plot_every = 100, learning_
     
     criterion = nn.CrossEntropyLoss(weight = torch.Tensor(CEL_weight).to(device))
     
+    scheduler = optim.lr_scheduler.StepLR(decoder_optimizer, step_size = total_batch, gamma = gamma)
+    
     
     for iter in range(1, n_iters + 1):
         num = iter % total_batch
         verbose = (iter % print_every == 0)
-        input_tensor = input_transform(train_X, num - 1).to(device)
-        target_tensor = target_Tensor[num - 1].to(device)
+        input_tensor = train_X[num].to(device)
+        target_tensor = target_Tensor[num].to(device)
         input_tensor = Variable(input_tensor, requires_grad = True)
+        #print(input_tensor.shape, target_tensor.shape)
+        if input_tensor.shape[0]<2:
+            continue
         if input_tensor.shape[0] != target_tensor.shape[0]:
             continue
         
@@ -262,12 +228,11 @@ def trainIters(decoder, n_iters, print_every = 1000, plot_every = 100, learning_
             print_loss_avg = print_loss_total / print_every
             print_loss_total = 0
             print('%s (%d %d%%) %.4f' % (timeSince(start, iter / n_iters),
-                                         iter, iter / n_iters * 100, print_loss_avg))
-
-        if iter % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
+                                         iter, iter / n_iters * print_every, print_loss_avg))
+            torch.save(decoder.state_dict(), 'naive_lstm_train.pt')
+        
+        scheduler.step()
+        
 
 
 input_size = 2
@@ -276,7 +241,9 @@ output_size = 2
 
 decoder = DecoderRNN(input_size, hidden_size, output_size).to(device)
 
-trainIters(decoder, 300000, print_every=1000, learning_rate=1e-2)
+trainIters(decoder, 300000, print_every=1000, learning_rate=1e-2, gamma=0.1)
+
+
     
 
 
