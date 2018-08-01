@@ -215,10 +215,10 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = 3
 # load data from file
-SEQ_LEN=200
-with open("/Users/joker/pitch_data.pkl", "rb") as f:
+SEQ_LEN=60
+with open("/home/yixing/pitch_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
