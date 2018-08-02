@@ -215,10 +215,10 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cpu")
 # load data from file
-SEQ_LEN=20
-with open("pitch_data.pkl", "rb") as f:
+SEQ_LEN=23
+with open("/Users/joker/Coding/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
@@ -229,21 +229,19 @@ def input_transform(train_x, time_x, i):
 
 def input_factorize(train_x):
     output = []
-    for i in range(train_x.shape[0]):
-        content=np.array_split(train_x[i], train_x[i].shape[0]/SEQ_LEN)
-        for index in range(len(content)):
-            if (len(content[index]))<(SEQ_LEN+1):
-                output.append(content[index])
+    content=np.array_split(train_x, len(train_x)/SEQ_LEN)
+    for index in range(len(content)):
+        if (len(content[index]))<(SEQ_LEN+1):
+            output.append(content[index])
     return output
 
 
 def target_factorize(train_y):
     output = []
-    for i in range(train_y.shape[0]):
-        content=np.array_split(train_y[i], train_y[i].shape[0]/SEQ_LEN)
-        for index in range(len(content)):
-            if (len(content[index]))<(SEQ_LEN+1):
-                output.append(content[index])
+    content=np.array_split(train_y, len(train_y)/SEQ_LEN)
+    for index in range(len(content)):
+        if (len(content[index]))<(SEQ_LEN+1):
+            output.append(content[index])
     return output
 
 def target_transform(train_y):
@@ -271,19 +269,17 @@ train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 print(len(train_X))
 print(train_X[0])
 
-START_TAG = 5
-STOP_TAG = 6
 CLIP = 5
 input_dim=3
-output_size=7
+output_size=4
+START_TAG=output_size-2
+STOP_TAG=output_size-1
 hidden_dim=512
-print_every=100
-plot_every=100
+print_every=50
+plot_every=50
 plot_losses=[]
 print_loss_total=0
 plot_loss_total=0
-
-# Make up some training data
 '''
 seq1=[[[1,2,60]], [[2,5,72]], [[5,9,62]], [[9,10,66]], [[10,17,70]], [[17, 20, 67]]]
 data1=torch.tensor(seq1, dtype=torch.float)
@@ -294,7 +290,7 @@ model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(d
 model.load_state_dict(torch.load('lstmcrf_train.pt'))
 model.eval()
 for i, (X_train, y_train) in enumerate(train_loader):
-    X_train=X_train.reshape(SEQ_LEN,1,3).float().to(device)
+    X_train=X_train.reshape(SEQ_LEN,1,input_dim).float().to(device)
     y_train=y_train.reshape(SEQ_LEN,).long().to(device)
     if(i>5):
         break
