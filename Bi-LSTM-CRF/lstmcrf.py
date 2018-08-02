@@ -196,7 +196,7 @@ import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
 SEQ_LEN=13
-with open("/Users/joker/Coding/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
+with open("/home/yixing/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
