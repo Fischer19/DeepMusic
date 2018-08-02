@@ -6,7 +6,7 @@ import random
 PATTERN_LEN=5
 
 def generate_sentence(start_t):
-    sequence_length=random.randint(7,20)
+    sequence_length=random.randint(7,15)
     pattern=random.randint(0,1)
     train_X=[]
     train_Y=[]
@@ -68,6 +68,6 @@ def generate_data(min_len):
     pl.dump(dic, f)
     f.close()
 
-generate_data(10000)
+generate_data(1000)
 
 
