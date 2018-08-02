@@ -217,8 +217,8 @@ class BiLSTM_CRF(nn.Module):
 import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
-SEQ_LEN=23
-with open("/home/yixing/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
+SEQ_LEN=13
+with open("/Users/joker/Coding/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
@@ -260,7 +260,7 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X[0:1], train_Y[0:1])
+train_set=data_utils.TensorDataset(train_X[0:3], train_Y[0:3])
 train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 
 # In[92]:
@@ -289,11 +289,11 @@ truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
-optimizer = optim.SGD(model.parameters(), lr=5e-4)
+optimizer = optim.SGD(model.parameters(), lr=1e-2)
 #scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(300):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(500):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     #scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):

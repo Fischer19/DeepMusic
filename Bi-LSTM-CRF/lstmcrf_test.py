@@ -191,6 +191,7 @@ class BiLSTM_CRF(nn.Module):
         # Find the best path, given the features.
         score, tag_seq = self._viterbi_decode(lstm_feats)
         return score, tag_seq
+
 import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
@@ -246,19 +247,17 @@ train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 print(len(train_X))
 print(train_X[0])
 
-CLIP = 10
+CLIP = 5
 input_dim=3
 output_size=4
 START_TAG=output_size-2
 STOP_TAG=output_size-1
 hidden_dim=512
-print_every=1
-plot_every=1
+print_every=50
+plot_every=50
 plot_losses=[]
 print_loss_total=0
 plot_loss_total=0
-
-# Make up some training data
 '''
 seq1=[[[1,2,60]], [[2,5,72]], [[5,9,62]], [[9,10,66]], [[10,17,70]], [[17, 20, 67]]]
 data1=torch.tensor(seq1, dtype=torch.float)
@@ -266,43 +265,16 @@ truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
-optimizer = optim.SGD(model.parameters(), lr=1e-2)
-#scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
-
-# Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(500):  # again, normally you would NOT do 300 epochs, it is toy data
-    print("epoch %i"%epoch)
-    #scheduler.step()
-    for i, (X_train, y_train) in enumerate(train_loader):
-        # Step 1. Remember that Pytorch accumulates gradients.
-        # We need to clear them out before each instance
-        X_train=X_train.reshape(SEQ_LEN,1,input_dim).float().to(device)
-        y_train=y_train.reshape(SEQ_LEN,).long().to(device)
-        model.zero_grad()
-
-        # Step 2. Get our inputs ready for the network, that is,
-        # turn them into Tensors of word indices.
-
-        # Step 3. Run our forward pass.
-        loss = model.neg_log_likelihood(X_train, y_train)
-        print_loss_total+=loss
-        plot_loss_total+=loss
-        
-        if i % print_every == 0:
-            print_loss_avg = print_loss_total / print_every
-            print_loss_total = 0
-            print('(%d %.4f)' % (i, print_loss_avg))
-
-        if i % plot_every == 0:
-            plot_loss_avg = plot_loss_total / plot_every
-            plot_losses.append(plot_loss_avg)
-            plot_loss_total = 0
-
-        # Step 4. Compute the loss, gradients, and update the parameters by
-        # calling optimizer.step()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP)
-        optimizer.step()
-    torch.save(model.state_dict(),'lstmcrf_train.pt')
-
+model.load_state_dict(torch.load('lstmcrf_train.pt'))
+model.eval()
+for i, (X_train, y_train) in enumerate(train_loader):
+    X_train=X_train.reshape(SEQ_LEN,1,input_dim).float().to(device)
+    y_train=y_train.reshape(SEQ_LEN,).long().to(device)
+    if(i>5):
+        break
+    else:
+        print(model(X_train))
+        print(y_train)
+        print()
 # We got it!
+

@@ -6,7 +6,7 @@ import random
 PATTERN_LEN=5
 
 def generate_sentence(start_t):
-    sequence_length=random.randint(7,15)
+    sequence_length=random.randint(7,11)
     pattern=random.randint(0,1)
     train_X=[]
     train_Y=[]
@@ -33,7 +33,7 @@ def generate_sentence(start_t):
         elif(i<(sequence_length-1)):
             lasting=random.randint(2,7) #this note lasts 1-5 seconds
             train_X.append([start_t, start_t+lasting, end_note])
-            train_Y.append(0)
+            train_Y.append(1)
             start_t+=lasting
             if pattern>0:
                 end_note+=1
