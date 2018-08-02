@@ -268,12 +268,12 @@ label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
 optimizer = optim.SGD(model.parameters(), lr=1e-2)
-#scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
+scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
 for epoch in range(10):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
-    #scheduler.step()
+    scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
         # We need to clear them out before each instance
