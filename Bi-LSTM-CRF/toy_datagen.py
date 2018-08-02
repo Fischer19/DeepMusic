@@ -68,6 +68,6 @@ def generate_data(min_len):
     pl.dump(dic, f)
     f.close()
 
-generate_data(1000)
+generate_data(1000000)
 
 

@@ -191,6 +191,7 @@ class BiLSTM_CRF(nn.Module):
         # Find the best path, given the features.
         score, tag_seq = self._viterbi_decode(lstm_feats)
         return score, tag_seq
+
 import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
@@ -237,7 +238,7 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X[0:3], train_Y[0:3])
+train_set=data_utils.TensorDataset(train_X, train_Y)
 train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 
 # In[92]:
@@ -252,8 +253,8 @@ output_size=4
 START_TAG=output_size-2
 STOP_TAG=output_size-1
 hidden_dim=512
-print_every=1
-plot_every=1
+print_every=100
+plot_every=100
 plot_losses=[]
 print_loss_total=0
 plot_loss_total=0
@@ -270,7 +271,7 @@ optimizer = optim.SGD(model.parameters(), lr=1e-2)
 #scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(500):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(10):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     #scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):
