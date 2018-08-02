@@ -215,10 +215,10 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
 SEQ_LEN=23
-with open("/Users/joker/Coding/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
+with open("/home/yixing/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
@@ -260,7 +260,7 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X, train_Y)
+train_set=data_utils.TensorDataset(train_X[0:1], train_Y[0:1])
 train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 
 # In[92]:

@@ -260,7 +260,7 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X, train_Y)
+train_set=data_utils.TensorDataset(train_X[0:1], train_Y[0:1])
 train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 
 # In[92]:
@@ -275,8 +275,8 @@ output_size=4
 START_TAG=output_size-2
 STOP_TAG=output_size-1
 hidden_dim=512
-print_every=10
-plot_every=10
+print_every=1
+plot_every=1
 plot_losses=[]
 print_loss_total=0
 plot_loss_total=0
@@ -289,11 +289,11 @@ truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
-optimizer = optim.SGD(model.parameters(), lr=5e-3)
+optimizer = optim.SGD(model.parameters(), lr=5e-4)
 #scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(100):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(300):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
     #scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):
