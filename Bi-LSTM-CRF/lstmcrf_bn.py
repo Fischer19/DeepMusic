@@ -215,10 +215,10 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-device = 3
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
-SEQ_LEN=60
-with open("/home/yixing/pitch_data.pkl", "rb") as f:
+SEQ_LEN=23
+with open("/Users/joker/Coding/DeepMusic/Bi-LSTM-CRF/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
@@ -229,21 +229,19 @@ def input_transform(train_x, time_x, i):
 
 def input_factorize(train_x):
     output = []
-    for i in range(train_x.shape[0]):
-        content=np.array_split(train_x[i], train_x[i].shape[0]/SEQ_LEN)
-        for index in range(len(content)):
-            if (len(content[index]))<(SEQ_LEN+1):
-                output.append(content[index])
+    content=np.array_split(train_x, len(train_x)/SEQ_LEN)
+    for index in range(len(content)):
+        if (len(content[index]))<(SEQ_LEN+1):
+            output.append(content[index])
     return output
 
 
 def target_factorize(train_y):
     output = []
-    for i in range(train_y.shape[0]):
-        content=np.array_split(train_y[i], train_y[i].shape[0]/SEQ_LEN)
-        for index in range(len(content)):
-            if (len(content[index]))<(SEQ_LEN+1):
-                output.append(content[index])
+    content=np.array_split(train_y, len(train_y)/SEQ_LEN)
+    for index in range(len(content)):
+        if (len(content[index]))<(SEQ_LEN+1):
+            output.append(content[index])
     return output
 
 def target_transform(train_y):
@@ -271,14 +269,14 @@ train_loader=data_utils.DataLoader(dataset=train_set, shuffle=True)
 print(len(train_X))
 print(train_X[0])
 
-START_TAG = 5
-STOP_TAG = 6
 CLIP = 5
-input_dim=86
-output_size=7
+input_dim=3
+output_size=4
+START_TAG=output_size-2
+STOP_TAG=output_size-1
 hidden_dim=512
-print_every=100
-plot_every=100
+print_every=50
+plot_every=50
 plot_losses=[]
 print_loss_total=0
 plot_loss_total=0
@@ -292,12 +290,12 @@ label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG).to(device)
 optimizer = optim.SGD(model.parameters(), lr=0.01, weight_decay=1e-7)
-scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
+#scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(10):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(3000):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
-    scheduler.step()
+    #scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
         # We need to clear them out before each instance
