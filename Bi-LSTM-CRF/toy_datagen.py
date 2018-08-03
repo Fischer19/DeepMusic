@@ -64,7 +64,7 @@ def generate_data(min_len):
     train_Y=np.array(train_Y)
     print(train_X, train_Y)
     dic={"X": train_X, "Y":train_Y}
-    f=open("toy_data.pkl", "wb")
+    f=open("/Users/joker/toy_data.pkl", "wb")
     pl.dump(dic, f)
     f.close()
 
