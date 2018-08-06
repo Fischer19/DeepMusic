@@ -14,12 +14,10 @@ def argmax(vec):
 
 def log_sum_exp(inputs, dim=None, keepdim=False):
     """Numerically stable logsumexp.
-
     Args:
         inputs: A Variable with any shape.
         dim: An integer.
         keepdim: A boolean.
-
     Returns:
         Equivalent of log(sum(exp(inputs), dim=dim, keepdim=keepdim)).
     """
@@ -176,7 +174,8 @@ class BiLSTM_CRF(nn.Module):
 
         # Initialize the viterbi variables in log space
         init_vvars = torch.full((BATCH_SIZE, self.output_size), -10000., device=device)
-        init_vvars[:][START_TAG] = 0
+        helper_index=torch.arange(BATCH_SIZE, dtype=torch.long, device=device)
+        init_vvars[helper_index,START_TAG] = 0
 
         # forward_var at step i holds the viterbi variables for step i-1
         forward_var = init_vvars
@@ -193,25 +192,34 @@ class BiLSTM_CRF(nn.Module):
                 next_tag_var = forward_var + self.transitions[next_tag]
                 best_tag_id = argmax(next_tag_var)
                 bptrs_t.append(best_tag_id)
-                viterbivars_t.append(next_tag_var[:][best_tag_id].view(BATCH_SIZE))
+                viterbivars_t.append(next_tag_var[helper_index,best_tag_id].view(BATCH_SIZE))
             # Now add in the emission scores, and assign forward_var to the set
             # of viterbi variables we just computed
-            forward_var = (torch.cat(viterbivars_t) + feat).view(BATCH_SIZE, -1)
+            forward_var = (torch.cat(viterbivars_t, 0).reshape(self.output_size, BATCH_SIZE))
+            forward_var = forward_var.transpose(0,1)
+            forward_var = forward_var.contiguous()
+            #print(forward_var)
+            #print(feat)
+            forward_var = (forward_var + feat).view(BATCH_SIZE, -1)
             backpointers.append(bptrs_t)
 
         # Transition to STOP_TAG
         terminal_var = forward_var + self.transitions[STOP_TAG]
         best_tag_id = argmax(terminal_var)
-        path_score = terminal_var[:][best_tag_id]
+        path_score = terminal_var[helper_index, best_tag_id]
 
         # Follow the back pointers to decode the best path.
         best_path = [best_tag_id]
         for bptrs_t in reversed(backpointers):
-            best_tag_id = bptrs_t[best_tag_id]
+            #print(bptrs_t)
+            temp=torch.cat(bptrs_t, 0).reshape(self.output_size, BATCH_SIZE)
+            temp=temp.transpose(0,1).contiguous().numpy()
+            #print(temp)
+            best_tag_id = temp[helper_index, best_tag_id]
             best_path.append(best_tag_id)
         # Pop off the start tag (we dont want to return that to the caller)
         start = best_path.pop()
-        assert start == START_TAG  # Sanity check
+        assert start[0] == START_TAG  # Sanity check
         best_path.reverse()
         return path_score, best_path
 
@@ -233,7 +241,7 @@ import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
 SEQ_LEN=13
-BATCH_SIZE=4
+BATCH_SIZE=2
 with open("/Users/joker/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
@@ -276,7 +284,7 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X[0:4], train_Y[0:4])
+train_set=data_utils.TensorDataset(train_X[0:BATCH_SIZE], train_Y[0:BATCH_SIZE])
 train_loader=data_utils.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
 
 # In[92]:

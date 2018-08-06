@@ -241,7 +241,7 @@ import pickle
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # load data from file
 SEQ_LEN=13
-BATCH_SIZE=4
+BATCH_SIZE=2
 with open("/Users/joker/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
@@ -283,7 +283,7 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X, train_Y)
+train_set=data_utils.TensorDataset(train_X[0:BATCH_SIZE], train_Y[0:BATCH_SIZE])
 train_loader=data_utils.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
 
 # In[92]:
