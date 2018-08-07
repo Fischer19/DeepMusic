@@ -238,11 +238,12 @@ class BiLSTM_CRF(nn.Module):
         return score, tag_seq
 
 import pickle
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device=3
 # load data from file
-SEQ_LEN=13
-BATCH_SIZE=2
-with open("/Users/joker/toy_data.pkl", "rb") as f:
+SEQ_LEN=23
+BATCH_SIZE=128
+with open("/home/yixing/toy_data.pkl", "rb") as f:
     dic = pickle.load(f)
     train_X = dic["X"]
     train_Y = dic["Y"]
@@ -284,8 +285,8 @@ def showPlot(points):
 train_X = input_factorize(train_X)
 train_X = torch.tensor(train_X)
 train_Y = torch.tensor(target_factorize(train_Y))
-train_set=data_utils.TensorDataset(train_X[0:BATCH_SIZE], train_Y[0:BATCH_SIZE])
-train_loader=data_utils.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, shuffle=True)
+train_set=data_utils.TensorDataset(train_X, train_Y)
+train_loader=data_utils.DataLoader(dataset=train_set, batch_size=BATCH_SIZE, drop_last=True, shuffle=True)
 
 # In[92]:
 
@@ -294,13 +295,13 @@ print(len(train_X))
 print(train_X[0])
 
 CLIP = 10
-input_dim=3
+input_dim=1
 output_size=4
 START_TAG=output_size-2
 STOP_TAG=output_size-1
 hidden_dim=512
-print_every=1
-plot_every=1
+print_every=50
+plot_every=50
 plot_losses=[]
 print_loss_total=0
 plot_loss_total=0
@@ -313,13 +314,13 @@ truth1=[0,2,0,1,1,2]
 label1=torch.tensor(truth1, dtype=torch.long)
 '''
 model = BiLSTM_CRF(input_dim, hidden_dim, output_size, START_TAG, STOP_TAG, BATCH_SIZE).to(device)
-optimizer = optim.Adam(model.parameters(), lr=1e-3)
-#scheduler = optim.lr_scheduler.StepLR(optimizer, 1)
+optimizer = optim.Adam(model.parameters(), lr=0.05, weight_decay=5e-5)
+scheduler = optim.lr_scheduler.StepLR(optimizer, 2, gamma=0.8)
 
 # Make sure prepare_sequence from earlier in the LSTM section is loaded
-for epoch in range(500):  # again, normally you would NOT do 300 epochs, it is toy data
+for epoch in range(50):  # again, normally you would NOT do 300 epochs, it is toy data
     print("epoch %i"%epoch)
-    #scheduler.step()
+    scheduler.step()
     for i, (X_train, y_train) in enumerate(train_loader):
         # Step 1. Remember that Pytorch accumulates gradients.
         # We need to clear them out before each instance
