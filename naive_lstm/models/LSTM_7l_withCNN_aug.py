@@ -14,7 +14,7 @@ import time
 import numpy as np
 from torch.autograd import Variable
 
-device = torch.device(2 if torch.cuda.is_available() else "cpu")
+device = torch.device(3 if torch.cuda.is_available() else "cpu")
     
 class DecoderRNN(nn.Module):
     def __init__(self, input_size, augmented_size, hidden_size, output_size, batch_size = 1, batch_length = 100, dropout_p = 0):
@@ -209,7 +209,7 @@ def factorize(data_X, data_Y, flag, batch_size, batch_length):
 import torch.utils.data as data_utils
 class CrossValidator:
     def __init__(self, model, partition=5, decoder=None, batch_size=BATCH_SIZE, batch_length = 100, epochs=10, lr=1e-2, 
-                 augment_data=True, print_every = 1000, plot_every = 100, gamma = 0.1):
+                 augment_data=True, print_every = 1000, plot_every = 100, gamma = 0.1, mode="crossvalidation"):
         self.model=model
         self.data_X = []
         self.data_Y = []
@@ -237,6 +237,7 @@ class CrossValidator:
         self.gamma = gamma
         self.print_every = print_every
         self.plot_every = plot_every
+        self.mode = mode
         
         
     def create_data(self, part):
@@ -275,6 +276,8 @@ class CrossValidator:
 
     def compute(self):
         for i in range(self.partition):
+            if self.mode == "training" and i > 0:
+                break
             start = time.time()
             temptrain_X, temptrain_Y, tempval_X, tempval_Y = self.create_data(i)
             self.train_X, self.train_Y = factorize(temptrain_X, temptrain_Y, self.augment_data_flag, self.batch_size, self.batch_length)
@@ -316,23 +319,30 @@ class CrossValidator:
                         
                         print_loss_avg = print_loss_total / self.print_every
                         print_loss_total = 0
-                        print("partition%i epoch %i"%(i,j))
+                        print("epoch %i"%j)
+                        if self.mode == "training":
+                            acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
+                            self.precision_history.append(acc[:-1])
+                            self.recall_history.append(one_acc[:-1])
+                            print("validation accuracy:", acc)
+                            print("validation prediction accuracy:", one_acc)
                         p = self.timeSince(start, (num+j*len(train_loader)) / (self.epochs * len(train_loader)))
-                        print('%s (%d %d%%) %.4f' % (p, num + 1, (num + 1) / (self.epochs * len(train_loader)) * self.print_every,
-                                                     print_loss_avg))
+                        print('%s (%d %d%%) %.4f' % (p, num + 1, (num + 1) / (self.epochs * len(train_loader)) * self.print_every, print_loss_avg))
+                        
                         """if(score > self.best_acc):
                         #    torch.save(cur_model.state_dict(), '/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_best(cv).pt')
                             self.best_acc = score
                         print("best_score:", self.best_acc)"""
-                        
-                acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
-                self.precision_history.append(acc[:-1])
-                self.recall_history.append(one_acc[:-1])
-                print("validation accuracy:", acc)
-                print("validation prediction accuracy:", one_acc)
+                if self.mode == "crossvalidation":        
+                    acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
+                    self.precision_history.append(acc[:-1])
+                    self.recall_history.append(one_acc[:-1])
+                    print("validation accuracy:", acc)
+                    print("validation prediction accuracy:", one_acc)
 
                 scheduler.step()
-                #torch.save(cur_model.state_dict(), '/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN(cv){}-{}.pt'.format(i,j))
+                if self.mode == "training":
+                    torch.save(cur_model.state_dict(), '/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_aug(cv){}.pt'.format(j))
                 
         return self.loss_history, self.precision_history, self.recall_history
 
@@ -344,7 +354,7 @@ output_size = 1
 batch_size = 40
 batch_length = 100
 model = DecoderRNN(input_size, augmented_size, hidden_size, output_size, batch_size, batch_length, dropout_p = 0).to(device)
-cv = CrossValidator(model, partition=5, epochs=5, batch_size = batch_size, print_every = 100)
+cv = CrossValidator(model, partition=13, epochs=8, batch_size = batch_size, print_every = 100, mode = "training")
 losses, precision, recall = cv.compute()
 
 
