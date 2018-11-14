@@ -185,7 +185,7 @@ def factorize(data_X, data_Y, size, batch_size, batch_length):
             if j == 1:
                 flag.append(loc)
         prev = 0
-        for j in range(4, len(flag), 10):
+        for j in range(4, len(flag), 5):
             new_X.append(pad(torch.from_numpy(X[prev:flag[j]]), batch_length))
             new_Y.append(pad(torch.from_numpy(Y[prev:flag[j]]), batch_length))
             prev = flag[j]
@@ -388,7 +388,7 @@ output_size = 1
 batch_size = 30
 batch_length = 100
 model = DecoderRNN(input_size, augmented_size, hidden_size, output_size, dropout_p = 0).to(device)
-cv = CrossValidator(model, partition=5, epochs=5, batch_size = batch_size, augment_data=11, print_every = 100, penalty = [1, 0.6])
+cv = CrossValidator(model, partition=5, epochs=5, batch_size = batch_size, augment_data=3, print_every = 100, penalty = [1, 0.6])
 losses, precision, recall = cv.compute()
 
 

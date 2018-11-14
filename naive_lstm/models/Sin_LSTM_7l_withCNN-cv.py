@@ -30,13 +30,13 @@ class DecoderRNN(nn.Module):
         self.relu1 = nn.ReLU()
         self.cnn2 = nn.Conv1d(self.augmented_size//2, self.augmented_size, kernel_size=3, padding=1)
         self.relu2 = nn.ReLU()
-        self.lstm_1 = nn.LSTM(self.augmented_size, self.hidden_size, num_layers=1, bidirectional=True)
-        self.lstm_2 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1, bidirectional=True)
-        self.lstm_3 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1, bidirectional=True)
-        self.lstm_4 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1, bidirectional=True)
-        self.lstm_5 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1, bidirectional=True)
-        self.lstm_6 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1, bidirectional=True)
-        self.lstm_7 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1, bidirectional=True)
+        self.lstm_1 = nn.LSTM(self.augmented_size, self.hidden_size, num_layers=1)
+        self.lstm_2 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1)
+        self.lstm_3 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1)
+        self.lstm_4 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1)
+        self.lstm_5 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1)
+        self.lstm_6 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1)
+        self.lstm_7 = nn.LSTM(self.hidden_size, self.hidden_size, num_layers=1)
         self.dropout1 = nn.Dropout(self.dropout_p)
         self.dropout2 = nn.Dropout(self.dropout_p)
         self.dropout3 = nn.Dropout(self.dropout_p)
@@ -102,7 +102,7 @@ class DecoderRNN(nn.Module):
 print(torch.cuda.is_available())
 
 
-BATCH_SIZE = 40
+BATCH_SIZE = 30
 def validate(decoder, val_x, val_y, val_threshold = 0.5):
 
     count = 0
@@ -143,7 +143,7 @@ def penalty_loss(penalty, criterion, output, target):
                 loss += penalty[1] * criterion(output[j, i], target[j, i])
     return loss/batch_size
 
-def train(input_tensor, target_tensor, decoder, decoder_optimizer, criterion, penalty = (1, 0.5)):
+def train(input_tensor, target_tensor, decoder, decoder_optimizer, criterion, penalty = (1.5, 0.5)):
     decoder_optimizer.zero_grad()
     
     loss = 0
@@ -211,7 +211,7 @@ class CrossValidator:
         self.model=model
         self.data_X = []
         self.data_Y = []
-        with open("/home/yiqin/2018summer_project/data/smooth_3d1s_augmented2.pkl", "rb") as f:
+        with open("/home/yiqin/2018summer_project/data/smooth_3d1s_augmented.pkl", "rb") as f:
             data= pickle.load(f)
             for i in range(len(data)):
                 self.data_X.append(data[i][0])
@@ -309,6 +309,12 @@ class CrossValidator:
                         plot_loss_avg = plot_loss_total / self.plot_every
                         plot_loss_total = 0
                         self.loss_history.append(plot_loss_avg)
+                        
+                        acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
+                        self.precision_history.append(acc[:-1])
+                        self.recall_history.append(one_acc[:-1])
+                        print("validation accuracy:", acc)
+                        print("validation prediction accuracy:", one_acc)
 
                     if (num+1) % self.print_every == 0:
                         
@@ -322,18 +328,6 @@ class CrossValidator:
                         #    torch.save(cur_model.state_dict(), '/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_best(cv).pt')
                             self.best_acc = score
                         print("best_score:", self.best_acc)"""
-                    if (num+1) % 1000 == 0:
-                        acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
-                        self.precision_history.append(acc[:-1])
-                        self.recall_history.append(one_acc[:-1])
-                        print("validation accuracy:", acc)
-                        print("validation prediction accuracy:", one_acc)
-                        
-                acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
-                self.precision_history.append(acc[:-1])
-                self.recall_history.append(one_acc[:-1])
-                print("validation accuracy:", acc)
-                print("validation prediction accuracy:", one_acc)
 
                 scheduler.step()
                 #torch.save(cur_model.state_dict(), '/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN(cv){}-{}.pt'.format(i,j))
@@ -345,10 +339,10 @@ input_size = 3
 augmented_size = 32
 hidden_size = 256
 output_size = 1
-batch_size = 40
+batch_size = 30
 batch_length = 100
 model = DecoderRNN(input_size, augmented_size, hidden_size, output_size, batch_size, batch_length, dropout_p = 0).to(device)
-cv = CrossValidator(model, partition=5, epochs=5, batch_size = batch_size, print_every = 100)
+cv = CrossValidator(model, partition=5, epochs=8, batch_size = batch_size, lr = 1e-3, print_every = 100)
 losses, precision, recall = cv.compute()
 
 
@@ -357,6 +351,6 @@ dic["loss"] = losses
 dic["precision"] = precision
 dic["recall"] = recall
 
-f = open("/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_batch_losses(cv-l2).pkl", "wb")
+f = open("/home/yiqin/2018summer_project/saved_model/Sin-LSTM-CNN_batch_losses(cv-l2).pkl", "wb")
 pickle.dump(dic, f)
 

@@ -104,7 +104,7 @@ class DecoderRNN(nn.Module):
 print(torch.cuda.is_available())
 
 
-BATCH_SIZE = 40
+BATCH_SIZE = 30
 def validate(decoder, val_x, val_y, val_threshold = 0.5):
 
     count = 0
@@ -213,7 +213,7 @@ class CrossValidator:
         self.model=model
         self.data_X = []
         self.data_Y = []
-        with open("/home/yiqin/2018summer_project/data/smooth_3d1s_augmented2.pkl", "rb") as f:
+        with open("/home/yiqin/2018summer_project/data/smooth_3d1s_augmented.pkl", "rb") as f:
             data= pickle.load(f)
             for i in range(len(data)):
                 self.data_X.append(data[i][0])
@@ -311,6 +311,12 @@ class CrossValidator:
                         plot_loss_avg = plot_loss_total / self.plot_every
                         plot_loss_total = 0
                         self.loss_history.append(plot_loss_avg)
+                        
+                        acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
+                        self.precision_history.append(acc[:-1])
+                        self.recall_history.append(one_acc[:-1])
+                        print("validation accuracy:", acc)
+                        print("validation prediction accuracy:", one_acc)
 
                     if (num+1) % self.print_every == 0:
                         
@@ -324,6 +330,7 @@ class CrossValidator:
                         #    torch.save(cur_model.state_dict(), '/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_best(cv).pt')
                             self.best_acc = score
                         print("best_score:", self.best_acc)"""
+                        
                         
                 acc, one_acc, score = validate(cur_model, self.val_X, self.val_Y)
                 self.precision_history.append(acc[:-1])
@@ -341,10 +348,10 @@ input_size = 3
 augmented_size = 32
 hidden_size = 256
 output_size = 1
-batch_size = 40
+batch_size = 30
 batch_length = 100
 model = DecoderRNN(input_size, augmented_size, hidden_size, output_size, batch_size, batch_length, dropout_p = 0).to(device)
-cv = CrossValidator(model, partition=5, epochs=5, batch_size = batch_size, print_every = 100)
+cv = CrossValidator(model, partition=5, epochs=8, batch_size = batch_size, print_every = 100, lr = 5e-2)
 losses, precision, recall = cv.compute()
 
 
@@ -353,6 +360,6 @@ dic["loss"] = losses
 dic["precision"] = precision
 dic["recall"] = recall
 
-f = open("/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_batch_losses(cv-l2).pkl", "wb")
+f = open("/home/yiqin/2018summer_project/saved_model/Bi-LSTM-CNN_batch_dropout_losses(cv-l2).pkl", "wb")
 pickle.dump(dic, f)
 
